@@ -513,7 +513,7 @@ write.csv(EMP, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_tes
 write.csv(INC, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/myINC.csv")
 write.csv(GDP, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/myGDP.csv")
 write.csv(subPCE, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/subPCE.csv")
-write.csv(subPCE, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/subEMP.csv")
+write.csv(subEMP, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/subEMP.csv")
 write.csv(subINC, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/subINC.csv")
 ```
 
