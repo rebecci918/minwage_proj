@@ -1,0 +1,183 @@
+---
+title: "Minimum Wage Project"
+output:
+  flexdashboard::flex_dashboard:
+    theme: 
+      version: 4
+      bootswatch: cerulean
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+minwage = read.csv("myminwage.csv")
+PCE = read.csv("myPCE.csv")
+EMP = read.csv("myEMP.csv")
+INC = read.csv("myINC.csv")
+GDP = read.csv("myGDP.csv")
+subPCE = read.csv("subPCE.csv")
+subEMP = read.csv("subEMP.csv")
+subINC = read.csv("subINC.csv")
+```
+
+State Data
+===================================== 
+
+## Column {.sidebar}
+```{r}
+selectInput("State", label="State", choices = sort(na.omit(minwage$GeoName)))
+```
+
+Minimum Wage Date Source: U.S. Department of Labor
+
+Indicator Data Source: Bureau of Economic Analysis
+
+## Column
+
+### Minimum Wage Change 2011-2020
+```{r}
+renderGauge({
+  x <- minwage %>% filter(GeoName == input$State) %>% select(X10change) %>% pull(1)
+  gauge(x, min = 0, max = 6.75, gaugeSectors(success = c(4,6.75), warning = c(2,3.99), danger = c(0,1.99)))})
+```
+
+### PCE Per Capita Change 2011-2020
+```{r}
+renderGauge({
+  x <- PCE %>% filter(GeoName == input$State, trimws(Description) == "Personal consumption expenditures") %>% select(pc10change) %>% pull(1)
+  gauge(x, min = 0, max = 127000, gaugeSectors(success = c(0,14999), warning = c(15000,49999), danger = c(50000,127000)))})
+```
+### INC Per Capita Change 2011-2020
+```{r}
+renderGauge({
+  x <- INC %>% filter(GeoName == input$State, trimws(Description) == "Per capita personal income (dollars) 2/") %>% select(X10change.x) %>% pull(1)
+  gauge(x, min = 10000, max = 26000, gaugeSectors(success = c(16000,26000), warning = c(13000,16000), danger = c(10000,13000)))})
+```
+
+## Column
+
+### EMP Per Capita Change 2011-2020
+```{r}
+renderGauge({
+  x <- EMP %>% filter(GeoName == input$State, trimws(Description) == "Total employment (number of jobs)") %>% select(pc10change) %>% pull(1)
+  gauge(x, min = -.5, max = .5, gaugeSectors(success = c(.05,.4), warning = c(-.05,.05), danger = c(-.05,-.5)))})
+```
+
+### GDP Per Capita Change 2011-2020
+```{r}
+renderGauge({
+  x <- GDP %>% filter(GeoName == input$State) %>% select(pc10change) %>% pull(1)
+  gauge(x, min = -11000, max = 32000, gaugeSectors(success = c(15000,32000), warning = c(5000,15000), danger = c(-11000,5000)))})
+```
+
+
+PCE
+===================================== 
+
+## Column {data-width=550}
+
+```{r}
+ggplot(subPCE, aes(x = X10change.y, y = pc10change)) + 
+  geom_point() + 
+  geom_smooth() + 
+  xlab("Change in Minimum Wage ($)") +
+  ylab("Change in Personal Consumption Expenditures Per Capita ($)") 
+```
+
+### Correlation Coefficient
+```{r}
+valueBox(0.2772036)
+```
+
+## Column {data-width=350}
+
+### Personal Consumption Expenditure
+
+* Personal Consumption Expenditure is the measure spending on goods and services. 
+* PCE is a way of measuring inflation. 
+* Changes in minimum wage and changes in total personal consumption expenditure are very weakly correlated. 
+
+
+EMP
+===================================== 
+
+## Column {data-width=550}
+
+```{r}
+ggplot(subEMP, aes(x = X10change.y, y = pc10change)) + 
+  geom_point() + 
+  geom_smooth() + 
+  xlab("Change in Minimum Wage ($)") +
+  ylab("Change in Total Employment per Capita (Number of Jobs)")  
+```
+
+### Correlation Coefficient
+```{r}
+valueBox(0.1210715)
+```
+
+## Column {data-width=350}
+
+### Employment
+
+* Employment change over the past 10 years (per capita). 
+* Changes in minimum wage do not affect changes in total employment. 
+
+INC
+===================================== 
+
+## Column {data-width=550}
+
+```{r}
+ggplot(subINC, aes(x = X10change.y, y = X10change.x)) + 
+  geom_point() + 
+  geom_smooth() + 
+  xlab("Change in Minimum Wage ($)") +
+  ylab("Change in Personal Income per Capita ($)") 
+```
+
+### Correlation Coefficient
+```{r}
+valueBox(0.5732798)
+```
+
+## Column {data-width=350}
+
+### Personal Income
+
+* Change in personal income per capita over the past 10 years. 
+* According to the correlation coefficient, changes in minimum wage and changes in personal income are positively correlated. 
+
+GDP
+===================================== 
+
+## Column {data-width=550}
+
+```{r}
+ggplot(GDP, aes(x = X10change.y, y = pc10change)) +
+  geom_point() + 
+  geom_smooth() +
+  xlab("Change in Minimum Wage ($)") +
+  ylab("Change in Real GDP per Capita (Current $)") 
+```
+
+### Correlation Coefficient
+```{r}
+valueBox(0.4422169)
+```
+
+## Column {data-width=350}
+
+### Gross Domestic Product
+
+* Change in GDP per capita over the past 10 years. 
+* GDP is the value added through production of goods and services. 
+* GDP = private consumption + gross private investment + government investment + government spending + (exports – imports).
+* Changes in minimum wage and changes in GDP are moderately correlated.  
+
+

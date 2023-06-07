@@ -1,0 +1,523 @@
+---
+title: "Minimum Wage Data"
+author: "Becky Baert"
+date: "2022-11-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Installing tidyverse
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("vctrs")
+#install.packages("readr")
+library(tidyverse)
+library(vctrs)
+library(readr)
+```
+
+## Loading in data sets
+* minwage = minimum wage by state
+* PCE - Personal Consumption Expenditure 
+  - Total spending on goods and services by state
+* EMP - Employment data
+  - Total employment
+  - Employment by industry
+* INC - Income
+  - Personal Income Total
+  - Population
+  - Personal Income per Capita
+* GDP - Real Gross Domestic Product
+
+```{r}
+minwage = read.csv("C:/Users/mekak/OneDrive/Documents/Fall_2022/DSC_130/minwage.csv")
+PCE = read.csv("C:/Users/mekak/OneDrive/Documents/Fall_2022/DSC_130/SAPCE/SAPCE1__ALL_AREAS_1997_2021.csv")
+EMP = read.csv("C:/Users/mekak/OneDrive/Documents/Fall_2022/DSC_130/SAINC/SAEMP25N__ALL_AREAS_1998_2021.csv")
+INC = read.csv("C:/Users/mekak/OneDrive/Documents/Fall_2022/DSC_130/SAINC/SAINC1__ALL_AREAS_1929_2021.csv")
+GDP = read.csv("C:/Users/mekak/OneDrive/Documents/Fall_2022/DSC_130/SAGDP/SAGDP1__ALL_AREAS_1997_2021.csv")
+```
+
+## Looking at the data.
+
+```{r}
+glimpse(minwage)
+glimpse(PCE)
+glimpse(EMP)
+glimpse(INC)
+glimpse(GDP)
+```
+
+Consider only the last 10 years of data (2011-2021) in segments of 5.
+
+```{r}
+minwage = minwage %>% select("State.or.other",
+                     "X2011",
+                     "X2012",
+                     "X2013",
+                     "X2014",
+                     "X2015",
+                     "X2016",
+                     "X2017",
+                     "X2018",
+                     "X2019",
+                     "X2020")
+PCE = PCE %>% select("GeoName",
+                     "Description", 
+                     "Unit",
+                     "X2011",
+                     "X2012",
+                     "X2013",
+                     "X2014",
+                     "X2015",
+                     "X2016",
+                     "X2017",
+                     "X2018",
+                     "X2019",
+                     "X2020")
+EMP = EMP %>% select("GeoName",
+                     "Description", 
+                     "Unit",
+                     "X2011",
+                     "X2012",
+                     "X2013",
+                     "X2014",
+                     "X2015",
+                     "X2016",
+                     "X2017",
+                     "X2018",
+                     "X2019",
+                     "X2020")
+INC = INC %>% select("GeoName",
+                     "Description", 
+                     "Unit",
+                     "X2011",
+                     "X2012",
+                     "X2013",
+                     "X2014",
+                     "X2015",
+                     "X2016",
+                     "X2017",
+                     "X2018",
+                     "X2019",
+                     "X2020")
+GDP = GDP %>% select("GeoName",
+                     "Description", 
+                     "Unit",
+                     "X2011",
+                     "X2012",
+                     "X2013",
+                     "X2014",
+                     "X2015",
+                     "X2016",
+                     "X2017",
+                     "X2018",
+                     "X2019",
+                     "X2020")
+```
+
+## Cleaning Data
+
+### Minimum Wage Data Set
+
+Dropping Guam, Puerto Rico, and the Virgin Islands because they're not in other data sets.
+```{r}
+minwage <- minwage[-c(54,55,56),]
+```
+
+Checking if there are and null values. 
+```{r}
+which(is.na(minwage))
+```
+
+is.na says there are no empty values but upon further inspection there are several "..." in the data frame. Additionally, there are some entries with that are hyphened or have letters and symbols after, which will stop conversion from character to double. 
+
+```{r}
+minwage %>% filter(X2012 == "...", X2013 == "...", X2014 == "...", X2015 == "...", X2016 == "...", X2017 == "...", X2018 == "...", X2019 == "...", X2020 == "...", X2011 == "...")
+```
+
+Upon further investigation, these states have maintained the federal minimum wage of $7.25, which has been in place since 2009. 
+
+```{r}
+minwage <- minwage %>% mutate(
+  X2012 = if_else(X2012 == "...", "7.25", X2012),
+  X2013 = if_else(X2013 == "...", "7.25", X2013),
+  X2014 = if_else(X2014 == "...", "7.25", X2014),
+  X2015 = if_else(X2015 == "...", "7.25", X2015),
+  X2016 = if_else(X2016 == "...", "7.25", X2016),
+  X2017 = if_else(X2017 == "...", "7.25", X2017),
+  X2018 = if_else(X2018 == "...", "7.25", X2018),
+  X2019 = if_else(X2019 == "...", "7.25", X2019),
+  X2020 = if_else(X2020 == "...", "7.25", X2020),
+  X2011 = if_else(X2011 == "...", "7.25", X2011)
+)
+```
+
+Dealing the hyphenated inputs. We're going to use the higher value. 
+
+```{r}
+minwage["n2012"] = nchar(minwage$X2012)#making new columns with length of each character
+minwage["n2013"] = nchar(minwage$X2013)
+minwage["n2014"] = nchar(minwage$X2014)
+minwage["n2015"] = nchar(minwage$X2015)
+minwage["n2016"] = nchar(minwage$X2016)
+minwage["n2017"] = nchar(minwage$X2017)
+minwage["n2018"] = nchar(minwage$X2018)
+minwage["n2019"] = nchar(minwage$X2019)
+minwage["n2020"] = nchar(minwage$X2020)
+minwage["n2011"] = nchar(minwage$X2011)
+
+minwage <- minwage %>% mutate(
+  X2012 = if_else(n2012 > 8, substring(X2012, 6), X2012),
+  X2013 = if_else(n2013 > 8, substring(X2013, 6), X2013),
+  X2014 = if_else(n2014 > 8, substring(X2014, 6), X2014),
+  X2015 = if_else(n2015 > 8, substring(X2015, 6), X2015),
+  X2016 = if_else(n2016 > 8, substring(X2016, 6), X2016),
+  X2017 = if_else(n2017 > 8, substring(X2017, 6), X2017),
+  X2018 = if_else(n2018 > 8, substring(X2018, 6), X2018),
+  X2019 = if_else(n2019 > 8, substring(X2019, 6), X2019),
+  X2020 = if_else(n2020 > 8, substring(X2020, 6), X2020),
+  X2011 = if_else(n2011 > 8, substring(X2011, 6), X2011),
+)
+```
+
+Now we need to get rid of any extra characters after the wage. 
+
+```{r}
+minwage["n2012"] = nchar(minwage$X2012) 
+minwage["n2013"] = nchar(minwage$X2013)
+minwage["n2014"] = nchar(minwage$X2014)
+minwage["n2015"] = nchar(minwage$X2015)
+minwage["n2016"] = nchar(minwage$X2016)
+minwage["n2017"] = nchar(minwage$X2017)
+minwage["n2018"] = nchar(minwage$X2018)
+minwage["n2019"] = nchar(minwage$X2019)
+minwage["n2020"] = nchar(minwage$X2020)
+minwage["n2011"] = nchar(minwage$X2011)
+
+minwage <- minwage %>% mutate(
+  X2012 = if_else(n2012 > 5, substr(X2012, 1, str_length(X2012)-3), X2012),
+  X2013 = if_else(n2013 > 5, substr(X2013, 1, str_length(X2013)-3), X2013),
+  X2014 = if_else(n2014 > 5, substr(X2014, 1, str_length(X2014)-3), X2014),
+  X2015 = if_else(n2015 > 5, substr(X2015, 1, str_length(X2015)-3), X2015),
+  X2016 = if_else(n2016 > 5, substr(X2016, 1, str_length(X2016)-3), X2016),
+  X2017 = if_else(n2017 > 5, substr(X2017, 1, str_length(X2017)-3), X2017),
+  X2018 = if_else(n2018 > 5, substr(X2018, 1, str_length(X2018)-3), X2018),
+  X2019 = if_else(n2019 > 5, substr(X2019, 1, str_length(X2019)-3), X2019),
+  X2020 = if_else(n2020 > 5, substr(X2020, 1, str_length(X2020)-3), X2020),
+  X2011 = if_else(n2011 > 5, substr(X2011, 1, str_length(X2011)-3), X2011),
+)
+```
+
+Getting rid of the count columns. 
+```{r}
+minwage <- minwage %>% select(!c(n2012, n2013, n2014, n2015, n2016, n2017, n2018, n2019, n2020, n2011))
+```
+
+Now we can convert from character to double. 
+```{r}
+minwage$X2012 = as.double(minwage$X2012)
+minwage$X2013 = as.double(minwage$X2013)
+minwage$X2014 = as.double(minwage$X2014)
+minwage$X2015 = as.double(minwage$X2015)
+minwage$X2016 = as.double(minwage$X2016)
+minwage$X2017 = as.double(minwage$X2017)
+minwage$X2018 = as.double(minwage$X2018)
+minwage$X2019 = as.double(minwage$X2019)
+minwage$X2020 = as.double(minwage$X2020)
+minwage$X2011 = as.double(minwage$X2011)
+
+minwage <- minwage %>% na.omit
+```
+
+### Personal Comsumption Expenditure Data
+
+```{r}
+PCE[which(is.na(PCE)),]
+```
+
+There are some weird empty rows we need to get rid of. 
+
+```{r}
+PCE <- PCE %>% na.omit
+```
+
+```{r}
+PCE$Description = as.factor(PCE$Description)
+```
+
+All data is the type it needs to be. 
+
+### Employment data
+
+```{r}
+EMP$Description = as.factor(EMP$Description)
+EMP$X2012 = as.double(EMP$X2012)
+EMP$X2013 = as.double(EMP$X2013)
+EMP$X2014 = as.double(EMP$X2014)
+EMP$X2015 = as.double(EMP$X2015)
+EMP$X2016 = as.double(EMP$X2016)
+EMP$X2017 = as.double(EMP$X2017)
+EMP$X2018 = as.double(EMP$X2018)
+EMP$X2019 = as.double(EMP$X2019)
+EMP$X2020 = as.double(EMP$X2020)
+EMP$X2011 = as.double(EMP$X2011)
+```
+
+```{r}
+which(is.na(EMP))
+```
+
+There seem to be a lot of missing values in this data set, but we don't need all of this data so let's sort out what we need and deal with the missing data from there. I selected the job sectors that consist of the most jobs that would be payed minimum wage or close to minimum wage (as well as total employment). 
+
+```{r}
+unique(EMP[,"Description"]) 
+EMP <- EMP %>% filter(trimws(Description) %in% c("Total employment (number of jobs)", "Manufacturing", "Retail trade", "Transportation and warehousing", "Accommodation and food services"))
+which(is.na(EMP))
+```
+
+Now there are only 8 missing values, lets check them out. 
+
+```{r}
+EMP[which(is.na(EMP)),]
+```
+
+They are completely empty rows so we can get rid of them. 
+
+```{r}
+EMP <- EMP %>% na.omit()
+```
+
+### Income
+
+```{r}
+INC$Description = as.factor(INC$Description)
+```
+
+```{r}
+which(is.na(INC))
+INC[which(is.na(INC)),]
+```
+
+More empty rows to get rid of
+
+```{r}
+INC <- INC %>% na.omit()
+INC[c(7,8,9),1] = "Alaska" #these states had asterisks after name that needed removed
+INC[c(37,38,39),1] = "Hawaii"
+```
+
+### GDP
+
+```{r}
+GDP$Description = as.factor(GDP$Description)
+```
+
+```{r}
+which(is.na(GDP))
+GDP[which(is.na(GDP)),]
+```
+More empty rows.
+
+```{r}
+GDP <- GDP %>% na.omit()
+```
+
+Only going to use current dollar GDP for this.
+
+```{r}
+GDP <- GDP %>% filter(trimws(Description) == "Current-dollar GDP (millions of current dollars)")
+```
+
+## Exploring the data
+
+Considering changes over the ten year period. 
+
+```{r}
+minwage["10change"] = minwage$X2020 - minwage$X2011
+```
+
+```{r}
+PCE["10change"] = PCE$X2020 - PCE$X2011
+```
+
+```{r}
+INC["10change"] = INC$X2020 - INC$X2011
+```
+
+```{r}
+EMP["10change"] = EMP$X2020 - EMP$X2011
+```
+
+```{r}
+GDP["10change"] = GDP$X2020 - GDP$X2011
+```
+
+## Adding minimum wage data to each dataset
+
+Renaming so column names match. Also changing federal to U.S. so it matches the other data sets.
+
+```{r}
+colnames(minwage)[1] <- "GeoName"
+minwage[1,1] <- "United States"
+```
+
+Using left join to combine tables.
+
+```{r}
+PCE <- left_join(x = PCE, y = minwage, by = "GeoName")
+INC <- left_join(x = INC, y = minwage, by = "GeoName")
+EMP <- left_join(x = EMP, y = minwage, by = "GeoName")
+GDP <- left_join(x = GDP, y = minwage, by = "GeoName")
+```
+
+Finally, it would be best to consider the indicators per capita, so we need to make those calculations for the PCE, EMP, and GDP
+
+```{r}
+pop <- INC %>% filter(trimws(Description) == "Population (persons) 1/") %>% 
+  select(GeoName, Description, X2011.x, X2012.x, X2013.x, X2014.x, X2015.x, X2016.x, X2017.x, 
+         X2018.x, X2019.x, X2020.x)
+```
+
+```{r}
+EMP["X11pcap"] = (EMP$X2011.x)/pop$X2011.x
+EMP["X12pcap"] = (EMP$X2012.x)/pop$X2012.x
+EMP["X13pcap"] = (EMP$X2013.x)/pop$X2013.x
+EMP["X14pcap"] = (EMP$X2014.x)/pop$X2014.x
+EMP["X15pcap"] = (EMP$X2015.x)/pop$X2015.x
+EMP["X16pcap"] = (EMP$X2016.x)/pop$X2016.x
+EMP["X17pcap"] = (EMP$X2017.x)/pop$X2017.x
+EMP["X18pcap"] = (EMP$X2018.x)/pop$X2018.x
+EMP["X19pcap"] = (EMP$X2019.x)/pop$X2019.x
+EMP["X20pcap"] = (EMP$X2020.x)/pop$X2020.x
+
+PCE["X11pcap"] = (PCE$X2011.x*1000000)/pop$X2011.x
+PCE["X12pcap"] = (PCE$X2012.x*1000000)/pop$X2012.x
+PCE["X13pcap"] = (PCE$X2013.x*1000000)/pop$X2013.x
+PCE["X14pcap"] = (PCE$X2014.x*1000000)/pop$X2014.x
+PCE["X15pcap"] = (PCE$X2015.x*1000000)/pop$X2015.x
+PCE["X16pcap"] = (PCE$X2016.x*1000000)/pop$X2016.x
+PCE["X17pcap"] = (PCE$X2017.x*1000000)/pop$X2017.x
+PCE["X18pcap"] = (PCE$X2018.x*1000000)/pop$X2018.x
+PCE["X19pcap"] = (PCE$X2019.x*1000000)/pop$X2019.x
+PCE["X20pcap"] = (PCE$X2020.x*1000000)/pop$X2020.x
+
+GDP["X11pcap"] = (GDP$X2011.x*1000000)/pop$X2011.x
+GDP["X12pcap"] = (GDP$X2012.x*1000000)/pop$X2012.x
+GDP["X13pcap"] = (GDP$X2013.x*1000000)/pop$X2013.x
+GDP["X14pcap"] = (GDP$X2014.x*1000000)/pop$X2014.x
+GDP["X15pcap"] = (GDP$X2015.x*1000000)/pop$X2015.x
+GDP["X16pcap"] = (GDP$X2016.x*1000000)/pop$X2016.x
+GDP["X17pcap"] = (GDP$X2017.x*1000000)/pop$X2017.x
+GDP["X18pcap"] = (GDP$X2018.x*1000000)/pop$X2018.x
+GDP["X19pcap"] = (GDP$X2019.x*1000000)/pop$X2019.x
+GDP["X20pcap"] = (GDP$X2020.x*1000000)/pop$X2020.x
+```
+```{r}
+PCE["pc10change"] = PCE$X20pcap - PCE$X11pcap
+```
+
+```{r}
+EMP["pc10change"] = EMP$X20pcap - EMP$X11pcap
+```
+
+```{r}
+GDP["pc10change"] = GDP$X20pcap - GDP$X11pcap
+```
+
+### Considering how change in minimum wage impacts PCE.
+
+```{r}
+subPCE <- PCE %>%
+  filter(trimws(Description) == "Personal consumption expenditures") %>%
+  select(GeoName, pc10change, `10change.y`)
+subPCE <- subPCE[-c(53,54,55,56,57,58,59,60),]
+ggplot(subPCE, aes(x = `10change.y`, y = pc10change)) + 
+  geom_point() + 
+  geom_smooth() + 
+  xlab("Change in Minimum Wage (dollars)") +
+  ylab("Change in Personal Consumption Expenditures Per Capita (Dollars)") 
+cor(subPCE$pc10change, subPCE$`10change.y`)
+```
+Changes in minimum wage and changes in total personal consumption expenditure are very weakly correlated.
+
+
+Considering how change in how much is spent on recreational services.
+
+```{r}
+recPCE <- PCE %>%
+  filter(trimws(Description) == "Recreation services") %>%
+  select(GeoName, pc10change, `10change.y`)
+recPCE <- recPCE[-c(53,54,55,56,57,58,59,60),]
+ggplot(recPCE, aes(x = `10change.y`, y = pc10change)) + 
+  geom_point() + 
+  geom_smooth() + 
+  xlab("Change in Minimum Wage (dollars)") +
+  ylab("Change in Recreational Spending per Capita (Dollars)") 
+cor(recPCE$pc10change, recPCE$`10change.y`)
+```
+There is no correlation between change in minimum wage and money spent on recreational services. 
+
+### Considering how change in minimum wage affects EMP. 
+
+```{r}
+subEMP <- EMP %>%
+  filter(trimws(Description) == "Total employment (number of jobs)") %>%
+  select(GeoName, pc10change, `10change.y`)
+subEMP <- subEMP[-c(53,54,55,56,57,58,59,60),]
+ggplot(subEMP, aes(x = `10change.y`, y = pc10change)) + 
+  geom_point() + 
+  geom_smooth() + 
+  xlab("Change in Minimum Wage (dollars)") +
+  ylab("Change in Total Employment per Capita (Number of Jobs)") 
+cor(subEMP$pc10change, subEMP$`10change.y`)
+```
+Changes in minimum wage do not affect changes in total employment. 
+
+### Considereing how changes in minwage affects INC
+
+```{r}
+subINC <- INC %>%
+  filter(trimws(Description) == "Per capita personal income (dollars) 2/") %>%
+  select(GeoName, `10change.x`, `10change.y`)
+subINC <- subINC[-c(53,54,55,56,57,58,59,60),]
+ggplot(subINC, aes(x = `10change.y`, y = `10change.x`)) + 
+  geom_point() + 
+  geom_smooth() + 
+  xlab("Change in Minimum Wage (dollars)") +
+  ylab("Change in Personal Income per Capita (dollars)") 
+cor(subINC$`10change.x`, subINC$`10change.y`)
+```
+According to the correlation coefficient, changes in minimum wage and changes in personal income are positively correlated. 
+
+### Considereing how changes in minwage affects GDP
+
+```{r}
+GDP <- GDP[-c(53,54,55,56,57,58,59,60),]
+ggplot(GDP, aes(x = `10change.y`, y = pc10change)) +
+  geom_point() + 
+  geom_smooth() +
+  xlab("Change in Minimum Wage (dollars)") +
+  ylab("Change in Real GDP per Capita (Current dollars)") 
+cor(GDP$pc10change, GDP$`10change.y`)
+```
+Changes in minimum wage and changes in GDP are moderately correlated. 
+
+```{r}
+write.csv(minwage, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/myminwage.csv")
+write.csv(PCE, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/myPCE.csv")
+write.csv(EMP, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/myEMP.csv")
+write.csv(INC, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/myINC.csv")
+write.csv(GDP, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/myGDP.csv")
+write.csv(subPCE, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/subPCE.csv")
+write.csv(subPCE, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/subEMP.csv")
+write.csv(subINC, file = "C:/Users/mekak/OneDrive/Documents/Fall_2022/directory_test/subINC.csv")
+```
+
+
+
+
+
